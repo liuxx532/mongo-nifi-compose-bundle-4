@@ -138,6 +138,8 @@ public class ComposeTailingGetMongo extends AbstractSessionFactoryProcessor {
     try {
       FindIterable<Document> it = oplog.find(gt("ts", bts)).cursorType(CursorType.TailableAwait).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
+//      getLogger().warn("current cursor first json: " + it.first().toJson());
+      getLogger().warn("current cursor: " + cursor.toString());
       try {
         while(cursor.hasNext()){
           ProcessSession session = sessionFactory.createSession();
@@ -178,7 +180,9 @@ public class ComposeTailingGetMongo extends AbstractSessionFactoryProcessor {
       case "i":
       case "d":
       case "u":
-        return doc.get("o", Document.class).getObjectId("_id").toHexString();
+//        return doc.get("o", Document.class).getObjectId("_id").toHexString();
+        //阿里云订制 o 为 o2
+        return doc.get("o2", Document.class).getObjectId("_id").toHexString();
       case "n":
       case "c":
         return Long.toString(doc.getLong("h"));

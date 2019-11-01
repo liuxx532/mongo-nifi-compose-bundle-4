@@ -13,8 +13,8 @@ From: 'an unknown organization'
     License: Bouncy Castle Licence  (http://www.bouncycastle.org/licence.html)
   - Bouncy Castle Provider (http://www.bouncycastle.org/java.html) org.bouncycastle:bcprov-jdk15on:jar:1.54
     License: Bouncy Castle Licence  (http://www.bouncycastle.org/licence.html)
-  - MongoDB Java Driver (http://www.mongodb.org) org.mongodb:mongo-java-driver:jar:3.2.2
-    License: The Apache Software License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
+  - MongoDB Java Driver (http://www.mongodb.org) org.mongodb:mongo-java-driver:jar:3.11.1
+    License: The Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0.txt)
   - RocksDB JNI (http://rocksdb.org/) org.rocksdb:rocksdbjni:jar:4.8.0
     License: Apache License 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
 
