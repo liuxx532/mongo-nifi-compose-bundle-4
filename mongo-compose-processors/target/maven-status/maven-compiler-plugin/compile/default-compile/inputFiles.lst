@@ -1,0 +1,7 @@
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeBatchPutMongo.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/MongoWrapper.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeUniqueRocksDB.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeTailingGetMongo.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeTailingPutMongo.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeStreamingGetMongo.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/BadOperationException.java
