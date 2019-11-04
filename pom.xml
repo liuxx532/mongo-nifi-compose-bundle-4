@@ -23,7 +23,7 @@
     </parent>
 
     <groupId>com.compose.nifi</groupId>
-    <artifactId>nifi-compose-bundle</artifactId>
+    <artifactId>mongo-compose-bundle</artifactId>
     <version>1.0.0-BETA</version>
     <packaging>pom</packaging>
 

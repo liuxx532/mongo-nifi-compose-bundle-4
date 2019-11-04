@@ -35,7 +35,7 @@ import static com.mongodb.client.model.Filters.*;
  */
 @TriggerSerially
 @InputRequirement(InputRequirement.Requirement.INPUT_FORBIDDEN)
-@Tags({"compose", "mongodb", "get", "tailing"})
+@Tags({"4.0","compose", "mongodb", "get", "tailing"})
 @WritesAttributes({
           @WritesAttribute(attribute = "mime.type", description = "This is the content-type for the content."),
           @WritesAttribute(attribute = "mongo.id", description = "The MongoDB object_id for the document in hex format or the 'h' from the oplog document."),
@@ -139,7 +139,7 @@ public class ComposeTailingGetMongo extends AbstractSessionFactoryProcessor {
       FindIterable<Document> it = oplog.find(gt("ts", bts)).cursorType(CursorType.TailableAwait).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
 //      getLogger().warn("current cursor first json: " + it.first().toJson());
-      getLogger().warn("current cursor: " + cursor.toString());
+      getLogger().warn("current cursor: " + cursor.next());
       try {
         while(cursor.hasNext()){
           ProcessSession session = sessionFactory.createSession();

@@ -3,7 +3,7 @@
 // maven pom organized by organization.
 // ------------------------------------------------------------------
 
-nifi-compose-nar
+mongo-compose-nar
 
 
 From: 'an unknown organization'
@@ -19,7 +19,7 @@ From: 'an unknown organization'
     License: Apache License 2.0  (http://www.apache.org/licenses/LICENSE-2.0.html)
 
 From: 'Apache NiFi Project' (http://nifi.apache.org/)
-  - nifi-compose-processors (http://nifi.apache.org/nifi-nar-bundles/nifi-compose-bundle/nifi-compose-processors) com.compose.nifi:nifi-compose-processors:jar:1.0.0-BETA
+  - nifi-compose-processors (http://nifi.apache.org/nifi-nar-bundles/mongo-compose-bundle/nifi-compose-processors) com.compose.nifi:nifi-compose-processors:jar:1.0.0-BETA
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)
   - nifi-processor-utils (http://nifi.apache.org/nifi-commons/nifi-processor-utils) org.apache.nifi:nifi-processor-utils:jar:1.0.0-BETA
     License: Apache License, Version 2.0  (http://www.apache.org/licenses/LICENSE-2.0)

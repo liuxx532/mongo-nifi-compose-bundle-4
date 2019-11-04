@@ -18,11 +18,11 @@
 
     <parent>
         <groupId>com.compose.nifi</groupId>
-        <artifactId>nifi-compose-bundle</artifactId>
+        <artifactId>mongo-compose-bundle</artifactId>
         <version>1.0.0-BETA</version>
     </parent>
 
-    <artifactId>nifi-compose-nar</artifactId>
+    <artifactId>mongo-compose-nar</artifactId>
     <version>1.0.0-BETA</version>
     <packaging>nar</packaging>
     <properties>
@@ -37,5 +37,16 @@
             <version>1.0.0-BETA</version>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.nifi</groupId>
+                <artifactId>nifi-nar-maven-plugin</artifactId>
+                <version>1.1.0</version>
+                <extensions>true</extensions>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
