@@ -98,7 +98,7 @@ public class ComposeOplogGetMongo extends AbstractSessionFactoryProcessor {
         while(cursor.hasNext()){
           ProcessSession session = sessionFactory.createSession();
           Document currentDoc = cursor.next();
-
+          getLogger().warn("currentDoc: " + currentDoc);
           String[] namespace = currentDoc.getString("ns").split(Pattern.quote("."));
           FlowFile flowFile = session.create();
           Document oDoc = currentDoc.get("o", Document.class);
@@ -108,7 +108,7 @@ public class ComposeOplogGetMongo extends AbstractSessionFactoryProcessor {
           flowFile = session.putAttribute(flowFile, "mongo.ts", currentDoc.get("ts", BsonTimestamp.class).toString());
           flowFile = session.putAttribute(flowFile, "mongo.op", currentDoc.getString("op"));
           flowFile = session.putAttribute(flowFile, "mongo.db", dbName);
-          flowFile = session.putAttribute(flowFile, "mongo.collection", namespace[1]);
+          flowFile = session.putAttribute(flowFile, "mongo.collection", namespace[0]);
 
           flowFile = session.write(flowFile, new OutputStreamCallback() {
             @Override
@@ -133,9 +133,9 @@ public class ComposeOplogGetMongo extends AbstractSessionFactoryProcessor {
       case "i":
       case "d":
       case "u":
-//        return doc.get("o", Document.class).getObjectId("_id").toHexString();
-        //阿里云订制 o 为 o2
-        return doc.get("o2", Document.class).getObjectId("_id").toHexString();
+         return doc.get("o2", Document.class) == null ?
+                 doc.get("o", Document.class).getObjectId("_id").toHexString() :
+                 doc.get("o2", Document.class).getObjectId("_id").toHexString();
       case "n":
       case "c":
         return Long.toString(doc.getLong("h"));
