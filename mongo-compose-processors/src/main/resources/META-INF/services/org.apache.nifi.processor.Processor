@@ -15,5 +15,6 @@
 com.compose.nifi.processors.ComposeBatchPutMongo
 com.compose.nifi.processors.ComposeStreamingGetMongo
 com.compose.nifi.processors.ComposeTailingGetMongo
+com.compose.nifi.processors.ComposeOplogGetMongo
 com.compose.nifi.processors.ComposeTailingPutMongo
 com.compose.nifi.processors.ComposeUniqueRocksDB
