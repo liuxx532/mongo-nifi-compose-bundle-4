@@ -98,7 +98,6 @@ public class ComposeOplogGetMongo extends AbstractSessionFactoryProcessor {
         while(cursor.hasNext()){
           ProcessSession session = sessionFactory.createSession();
           Document currentDoc = cursor.next();
-          getLogger().warn("currentDoc: " + currentDoc);
           String[] namespace = currentDoc.getString("ns").split(Pattern.quote("."));
           FlowFile flowFile = session.create();
           Document oDoc = currentDoc.get("o", Document.class);
