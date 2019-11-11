@@ -34,7 +34,7 @@ import static com.mongodb.client.model.Filters.eq;
 @Tags({"compose", "mongodb", "put"})
 @InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @CapabilityDescription("Puts Documents and Operations into a MongoDB. Relies on attributes to decide on type of operation such as insert, update, or delete.")
-public class ComposeTailingPutMongo extends AbstractProcessor {
+public class ComposeOplogPutMongo extends AbstractProcessor {
   private static final Relationship REL_FAILURE = new Relationship.Builder().name("failure").description("the unhappy path. check for appropriate attributes among other things.").build();
   private static final Relationship REL_SUCCESS = new Relationship.Builder().name("success").description("the happy path. probably auto terminate it.").build();
 
@@ -55,6 +55,9 @@ public class ComposeTailingPutMongo extends AbstractProcessor {
   }
 
   private MongoWrapper mongoWrapper;
+
+  final String localDB = "local";
+  final String oplogDB = "oplog";
 
   @Override
   public final Set<Relationship> getRelationships() {
@@ -87,12 +90,8 @@ public class ComposeTailingPutMongo extends AbstractProcessor {
 
     WriteConcern writeConcern = mongoWrapper.getWriteConcern(context);
 
-    String id = flowFile.getAttribute("mongo.id");
-    String operation = flowFile.getAttribute("mongo.op");
-    String databaseName = flowFile.getAttribute("mongo.db");
-    String collectionName = flowFile.getAttribute("mongo.collection");
 
-    MongoCollection<Document> collection = mongoWrapper.getDatabase(databaseName).getCollection(collectionName).withWriteConcern(writeConcern);
+    MongoCollection<Document> collection = mongoWrapper.getLocalDatabase().getCollection(oplogDB).withWriteConcern(writeConcern);
 
     try {
                   // Read the contents of the FlowFile into a byte array
@@ -104,28 +103,8 @@ public class ComposeTailingPutMongo extends AbstractProcessor {
             }
         });
         Document doc = Document.parse(new String(content));
-
-        switch(operation) {
-          case "q":
-          case "i":
-            collection.insertOne(doc);
-            break;
-          case "d":
-            collection.deleteOne(eq("_id", new ObjectId(id)));
-            break;
-          case "u":
-            doc.remove("_id");
-            // doc 中带有$set，只用doc 就可以
-            collection.updateOne(eq("_id", new ObjectId(id)), doc);
-            break;
-          case "n":
-            break;
-          case "c":
-            //TODO add $cmd handlers for create and drop collections
-            break;
-          default:
-            throw new BadOperationException("Unhandled operation");
-        }
+        getLogger().info("Document: " + doc);
+        collection.insertOne(doc);
 
         session.transfer(flowFile, REL_SUCCESS);
     } catch (Exception e) {

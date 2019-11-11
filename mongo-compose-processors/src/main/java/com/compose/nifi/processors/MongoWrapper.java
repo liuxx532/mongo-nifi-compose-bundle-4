@@ -74,6 +74,13 @@ class MongoWrapper {
         .defaultValue(WRITE_CONCERN_ACKNOWLEDGED)
         .build();
 
+  public static final PropertyDescriptor TS_KEY = new PropertyDescriptor.Builder()
+          .name("TS Key")
+          .description("key to get ts")
+          .required(true)
+          .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+          .build();
+
   private final static String SYSTEM_INDEXES = "system.indexes";
   static final Pattern systemIndexesPattern = Pattern.compile(SYSTEM_INDEXES);
 
@@ -85,6 +92,16 @@ class MongoWrapper {
     descriptors.add(DATABASE_NAME);
     descriptors.add(SSL_CONTEXT_SERVICE);
     descriptors.add(CLIENT_AUTH);
+  }
+
+  static List<PropertyDescriptor> oplogDescriptors = new ArrayList<>();
+
+  static {
+    descriptors.add(URI);
+    descriptors.add(DATABASE_NAME);
+    descriptors.add(SSL_CONTEXT_SERVICE);
+    descriptors.add(CLIENT_AUTH);
+    descriptors.add(TS_KEY);
   }
 
   private MongoClient mongoClient;
@@ -187,6 +204,10 @@ class MongoWrapper {
         writeConcern = WriteConcern.ACKNOWLEDGED;
     }
     return writeConcern;
+  }
+
+  public String getTSKey(final ProcessContext context) {
+    return context.getProperty(TS_KEY).getValue();
   }
 
 }
