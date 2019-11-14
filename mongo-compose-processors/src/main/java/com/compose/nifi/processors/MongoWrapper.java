@@ -45,6 +45,12 @@ class MongoWrapper {
           .required(true)
           .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
           .build();
+  private static final PropertyDescriptor COLLECTION_NAME = new PropertyDescriptor.Builder()
+          .name("Mongo collection Name")
+          .description("The name of the collection to use")
+          .required(true)
+          .addValidator(StandardValidators.NON_EMPTY_VALIDATOR)
+          .build();
   private static final PropertyDescriptor SSL_CONTEXT_SERVICE = new PropertyDescriptor.Builder()
           .name("ssl-context-service")
           .displayName("SSL Context Service")
@@ -99,6 +105,7 @@ class MongoWrapper {
   static {
     oplogDescriptors.add(URI);
     oplogDescriptors.add(DATABASE_NAME);
+    oplogDescriptors.add(COLLECTION_NAME);
     oplogDescriptors.add(SSL_CONTEXT_SERVICE);
     oplogDescriptors.add(CLIENT_AUTH);
     oplogDescriptors.add(TS_KEY);
@@ -116,6 +123,14 @@ class MongoWrapper {
   public MongoDatabase getDatabase(final ProcessContext context) {
     final String databaseName = context.getProperty(DATABASE_NAME).getValue();
     return mongoClient.getDatabase(databaseName);
+  }
+
+  public String getCollection(final ProcessContext context) {
+    return context.getProperty(COLLECTION_NAME).getValue();
+  }
+
+  public String getDatabaseName(final ProcessContext context) {
+    return context.getProperty(DATABASE_NAME).getValue();
   }
 
   public MongoDatabase getDatabase(final String databaseName) {

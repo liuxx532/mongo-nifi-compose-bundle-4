@@ -30,9 +30,7 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.regex.Pattern;
 
-import static com.mongodb.client.model.Filters.and;
-import static com.mongodb.client.model.Filters.gt;
-import static com.mongodb.client.model.Filters.ne;
+import static com.mongodb.client.model.Filters.*;
 
 /**
  * Created by liuguanxiong on 8/25/16.
@@ -108,7 +106,14 @@ public class OplogGetMongo extends AbstractProcessor {
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
       BsonTimestamp givenTs = new BsonTimestamp( tsValue, 0);
-      FindIterable<Document> it = oplog.find(and(gt("ts", givenTs),ne("op","n")))
+      String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
+      getLogger().info("ns: " + ns );
+      FindIterable<Document> it = oplog.find(and(
+              gt("ts", givenTs),
+              eq("op","i"),
+              eq("op","u"),
+              eq("op","d"),
+              eq("ns", ns)))
               .cursorType(CursorType.NonTailable).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       try {
