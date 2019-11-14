@@ -141,6 +141,9 @@ public class OplogGetMongo extends AbstractProcessor {
         }
 
         flowFile = session.putAttribute(flowFile, tsKey, endTsValue);
+        flowFile = session.putAttribute(flowFile, "mongo.db", mongoWrapper.getDatabaseName(context));
+        flowFile = session.putAttribute(flowFile, "mongo.collection", mongoWrapper.getCollection(context));
+
         flowFile = session.write(flowFile, new OutputStreamCallback() {
           @Override
           public void process(OutputStream outputStream) throws IOException {
