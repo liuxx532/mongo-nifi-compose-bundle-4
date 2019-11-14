@@ -110,16 +110,17 @@ public class OplogGetMongo extends AbstractProcessor {
       getLogger().info("ns: " + ns );
       FindIterable<Document> it = oplog.find(and(
               gt("ts", givenTs),
-              eq("op","i"),
-              eq("op","u"),
-              eq("op","d"),
-              eq("ns", ns)))
+              ne("op","n"),
+              ne("op","c"),
+              ne("op","q"),
+              eq("ns",ns)))
               .cursorType(CursorType.NonTailable).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       try {
         JSONArray jsonArray = new JSONArray();
         while(cursor.hasNext()){
           Document currentDoc = cursor.next();
+          getLogger().info("currentDoc:" + currentDoc);
           jsonArray.add(currentDoc.toJson());
         }
 
