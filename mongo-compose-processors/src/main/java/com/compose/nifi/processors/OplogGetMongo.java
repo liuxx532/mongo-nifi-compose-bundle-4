@@ -1,6 +1,7 @@
 package com.compose.nifi.processors;
 
 
+import com.google.gson.JsonArray;
 import com.mongodb.CursorType;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
@@ -24,11 +25,14 @@ import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
 import java.util.regex.Pattern;
 
+import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.gt;
+import static com.mongodb.client.model.Filters.ne;
 
 /**
  * Created by liuguanxiong on 8/25/16.
@@ -45,8 +49,9 @@ import static com.mongodb.client.model.Filters.gt;
         @WritesAttribute(attribute = "mongo.collection", description = "The Mongo collection name")
 })
 @CapabilityDescription("Dumps documents from a MongoDB and then dumps operations from the oplog in soft real time. The FlowFile content is the document itself from the find or the `o` attribute from the oplog. It keeps a connection open and waits on new oplog entries. Restart does the full dump again and then oplog tailing.")
-public class OplogGetMongo extends AbstractSessionFactoryProcessor {
+public class OplogGetMongo extends AbstractProcessor {
   private static final Relationship REL_SUCCESS = new Relationship.Builder().name("success").description("the happy path for mongo documents and operations").build();
+  private static final Relationship REL_FAILURE = new Relationship.Builder().name("failure").description("the unhappy path. check for appropriate attributes among other things.").build();
 
   private static final Set<Relationship> relationships;
 
@@ -86,49 +91,52 @@ public class OplogGetMongo extends AbstractSessionFactoryProcessor {
   }
 
   @Override
-  public final void onTrigger(final ProcessContext context, final ProcessSessionFactory sessionFactory) {
-    ProcessSession session = sessionFactory.createSession();
-    FlowFile flowFile = session.create();
+  public final void onTrigger(final ProcessContext context, final ProcessSession session) {
+    FlowFile flowFile = session.get();
+    if(flowFile == null) {
+      session.getProvenanceReporter().receive(flowFile, mongoWrapper.getURI(context));
+      session.transfer(flowFile, REL_FAILURE);
+      return;
+    }
 
-    int tsValue = Integer.parseInt(
-            flowFile.getAttribute(mongoWrapper.getTSKey(context)) == null ? "1573543026" : mongoWrapper.getTSKey(context));
+    getLogger().info("ts key: " + mongoWrapper.getTSKey(context));
+    getLogger().info(flowFile.getAttribute(mongoWrapper.getTSKey(context)));
 
-    BsonTimestamp bts = new BsonTimestamp((int) (new Date().getTime() / 1000), 0);
-    String dbName = mongoWrapper.getDatabase(context).getName();
+    String tsKey = mongoWrapper.getTSKey(context);
+    int tsValue = Integer.parseInt(flowFile.getAttribute(tsKey));
 
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
-      getLogger().info("bts: " + bts);
-      getLogger().info("tsValue: " + tsValue);
-      BsonTimestamp givenTs = new BsonTimestamp( 1573543026, 0);
-      getLogger().info("givenTs: " + givenTs);
-      FindIterable<Document> it = oplog.find(gt("ts", givenTs))
-              .cursorType(CursorType.TailableAwait).oplogReplay(true).noCursorTimeout(true);
+      BsonTimestamp givenTs = new BsonTimestamp( tsValue, 0);
+      FindIterable<Document> it = oplog.find(and(gt("ts", givenTs),ne("op","n")))
+              .cursorType(CursorType.NonTailable).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       try {
+        JsonArray jsonArray = new JsonArray();
         while(cursor.hasNext()){
           Document currentDoc = cursor.next();
           getLogger().info("currentDoc: " + currentDoc);
-          String[] namespace = currentDoc.getString("ns").split(Pattern.quote("."));
-          Document oDoc = currentDoc.get("o", Document.class);
-          String h = Long.toString(currentDoc.getLong("h"));
-          flowFile = session.putAttribute(flowFile, "mime.type", "application/json");
-          flowFile = session.putAttribute(flowFile, "mongo.id", getId(currentDoc));
-          flowFile = session.putAttribute(flowFile, "mongo.ts", currentDoc.get("ts", BsonTimestamp.class).toString());
-          flowFile = session.putAttribute(flowFile, "mongo.op", currentDoc.getString("op"));
-          flowFile = session.putAttribute(flowFile, "mongo.db", dbName);
-          flowFile = session.putAttribute(flowFile, "mongo.collection", namespace[1]);
-
-          flowFile = session.write(flowFile, new OutputStreamCallback() {
-            @Override
-            public void process(OutputStream outputStream) throws IOException {
-              IOUtils.write(currentDoc.toJson().toString(), outputStream);
-            }
-          });
-          session.getProvenanceReporter().receive(flowFile, mongoWrapper.getURI(context));
-          session.transfer(flowFile, REL_SUCCESS);
-          session.commit();
+          jsonArray.add(currentDoc.toJson());
         }
+
+        String endTsValue = null;
+
+        if (jsonArray.size() > 0) {
+          endTsValue = jsonArray.get(jsonArray.size()-1).getAsJsonObject()
+                  .getAsJsonObject("ts")
+                  .getAsJsonObject("$timestamp")
+                  .get("t").toString();
+        }
+
+        getLogger().info("jsonArray: " + jsonArray.toString());
+        flowFile = session.putAttribute(flowFile, tsKey, endTsValue);
+        flowFile = session.write(flowFile, new OutputStreamCallback() {
+          @Override
+          public void process(OutputStream outputStream) throws IOException {
+            outputStream.write(jsonArray.toString().getBytes());
+          }
+        });
+        session.transfer(flowFile, REL_SUCCESS);
       } finally {
         cursor.close();
       }
@@ -137,19 +145,4 @@ public class OplogGetMongo extends AbstractSessionFactoryProcessor {
     }
   }
 
-  private String getId(Document doc) {
-    switch(doc.getString("op")) {
-      case "i":
-      case "d":
-      case "u":
-        return doc.get("o2", Document.class) == null ?
-                doc.get("o", Document.class).getObjectId("_id").toHexString() :
-                doc.get("o2", Document.class).getObjectId("_id").toHexString();
-      case "n":
-      case "c":
-        return Long.toString(doc.getLong("h"));
-      default:
-        return "NA";
-    }
-  }
 }

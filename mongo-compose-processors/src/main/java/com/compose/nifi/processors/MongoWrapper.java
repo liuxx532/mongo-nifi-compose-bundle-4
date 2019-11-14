@@ -97,11 +97,11 @@ class MongoWrapper {
   static List<PropertyDescriptor> oplogDescriptors = new ArrayList<>();
 
   static {
-    descriptors.add(URI);
-    descriptors.add(DATABASE_NAME);
-    descriptors.add(SSL_CONTEXT_SERVICE);
-    descriptors.add(CLIENT_AUTH);
-    descriptors.add(TS_KEY);
+    oplogDescriptors.add(URI);
+    oplogDescriptors.add(DATABASE_NAME);
+    oplogDescriptors.add(SSL_CONTEXT_SERVICE);
+    oplogDescriptors.add(CLIENT_AUTH);
+    oplogDescriptors.add(TS_KEY);
   }
 
   private MongoClient mongoClient;

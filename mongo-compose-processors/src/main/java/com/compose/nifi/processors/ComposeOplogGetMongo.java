@@ -35,7 +35,7 @@ import static com.mongodb.client.model.Filters.gt;
  */
 @EventDriven
 @TriggerSerially
-@InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
+@InputRequirement(InputRequirement.Requirement.INPUT_ALLOWED)
 @Tags({"4.0","oplog","compose", "mongodb", "get"})
 @WritesAttributes({
           @WritesAttribute(attribute = "mime.type", description = "This is the content-type for the content."),
@@ -90,47 +90,42 @@ public class ComposeOplogGetMongo extends AbstractProcessor {
 
   @Override
   public final void onTrigger(final ProcessContext context, final ProcessSession session) {
-    FlowFile flowFile = session.get();
-    if(flowFile == null) {
-      transferToRelationship(session, flowFile, REL_FAILURE);
-      return;
-    }
+//    FlowFile flowFile = session.get();
+//    if(flowFile == null) {
+//      transferToRelationship(session, flowFile, REL_FAILURE);
+//      return;
+//    }
+    FlowFile flowFile = session.create();
 
     int tsValue = Integer.parseInt(flowFile.getAttribute(mongoWrapper.getTSKey(context)));
 
-    BsonTimestamp bts = new BsonTimestamp(tsValue, 0);
-    String dbName = mongoWrapper.getDatabase(context).getName();
+    BsonTimestamp bts = new BsonTimestamp(1573543026, 0);
+//    BsonTimestamp bts = new BsonTimestamp((int) (new Date().getTime() / 1000), 0);
+
+    getLogger().info("tsValue: " + tsValue);
+    getLogger().info("bts: " + bts);
+//    String dbName = mongoWrapper.getDatabase(context).getName();
 
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
-      final byte[] content = new byte[(int) flowFile.getSize()];
-      session.read(flowFile, new InputStreamCallback() {
-        @Override
-        public void process(final InputStream in) throws IOException {
-          StreamUtils.fillBuffer(in, content, true);
-        }
-      });
-
-
       FindIterable<Document> it = oplog.find(gt("ts", bts)).cursorType(CursorType.TailableAwait).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       Document currentDoc = cursor.next();
       getLogger().info("currentDoc: " + currentDoc);
       String[] namespace = currentDoc.getString("ns").split(Pattern.quote("."));
 
-      if ( namespace[1] == null || namespace[1].equals("$cmd") || namespace[1].equals("system")) {
+      if ( currentDoc.getString("op").equals("n") || namespace[1] == null || namespace[1].equals("$cmd") || namespace[1].equals("system")) {
         transferToRelationship(session, flowFile, REL_FAILURE);
         return;
       }
 
       try {
         while(cursor.hasNext()){
-
           flowFile = session.putAttribute(flowFile, "mime.type", "application/json");
           flowFile = session.putAttribute(flowFile, "mongo.id", getId(currentDoc));
           flowFile = session.putAttribute(flowFile, "mongo.ts", currentDoc.get("ts", BsonTimestamp.class).getTime() + "");
           flowFile = session.putAttribute(flowFile, "mongo.op", currentDoc.getString("op"));
-          flowFile = session.putAttribute(flowFile, "mongo.db", dbName);
+          flowFile = session.putAttribute(flowFile, "mongo.db", namespace[0]);
           flowFile = session.putAttribute(flowFile, "mongo.collection", namespace[1]);
 
           flowFile = session.write(flowFile, new OutputStreamCallback() {
