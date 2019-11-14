@@ -1,13 +1,13 @@
 package com.compose.nifi.processors;
 
 
-import com.google.gson.JsonArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
+import org.json.simple.parser.JSONParser;
 import com.mongodb.CursorType;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.MongoIterable;
-import org.apache.commons.io.IOUtils;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.TriggerSerially;
 import org.apache.nifi.annotation.behavior.WritesAttribute;
@@ -112,23 +112,28 @@ public class OplogGetMongo extends AbstractProcessor {
               .cursorType(CursorType.NonTailable).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       try {
-        JsonArray jsonArray = new JsonArray();
+        JSONArray jsonArray = new JSONArray();
         while(cursor.hasNext()){
           Document currentDoc = cursor.next();
-          getLogger().info("currentDoc: " + currentDoc);
           jsonArray.add(currentDoc.toJson());
         }
 
         String endTsValue = null;
 
         if (jsonArray.size() > 0) {
-          endTsValue = jsonArray.get(jsonArray.size()-1).getAsJsonObject()
-                  .getAsJsonObject("ts")
-                  .getAsJsonObject("$timestamp")
-                  .get("t").toString();
+          String lastObj = jsonArray.get(jsonArray.size()-1).toString();
+          getLogger().info("lastObj: " + lastObj);
+
+          JSONObject jsonObj = (JSONObject)(new JSONParser().parse(lastObj));
+          getLogger().info("currentDoc Json: " + jsonObj.toString());
+
+          JSONObject tsObj = (JSONObject)(new JSONParser().parse(jsonObj.get("ts").toString()));
+          JSONObject timestampObj = (JSONObject)(new JSONParser().parse(tsObj.get("$timestamp").toString()));
+          endTsValue = timestampObj.get("t").toString();
+
+          getLogger().info("tObj: " + endTsValue);
         }
 
-        getLogger().info("jsonArray: " + jsonArray.toString());
         flowFile = session.putAttribute(flowFile, tsKey, endTsValue);
         flowFile = session.write(flowFile, new OutputStreamCallback() {
           @Override
