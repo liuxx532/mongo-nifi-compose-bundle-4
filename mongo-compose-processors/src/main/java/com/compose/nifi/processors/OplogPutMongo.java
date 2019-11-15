@@ -18,6 +18,7 @@ import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.stream.io.StreamUtils;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -25,6 +26,8 @@ import org.json.simple.parser.JSONParser;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+
+import static com.mongodb.client.model.Filters.eq;
 
 /**
  * Created by hayshutton on 8/26/16.
@@ -103,11 +106,14 @@ public class OplogPutMongo extends AbstractProcessor {
         getLogger().info("jsonArray: " + jsonArray);
 
         for (int i = 0; i < jsonArray.size(); i++) {
-            JSONObject obj = (JSONObject)(new JSONParser().parse(jsonArray.get(i).toString()));
-            obj.get("");
-        }
+            JSONObject currentObj = (JSONObject)(new JSONParser().parse(jsonArray.get(i).toString()));
+            getLogger().info("currentDoc: " + currentObj);
 
-        collection.insertOne(doc);
+            Document currentDoc = Document.parse(currentObj.toJSONString());
+            getLogger().info("oDoc: " + currentDoc);
+
+            excuteOperation(collection,currentDoc);
+        }
 
         session.transfer(flowFile, REL_SUCCESS);
     } catch (Exception e) {
@@ -115,6 +121,35 @@ public class OplogPutMongo extends AbstractProcessor {
         session.transfer(flowFile, REL_FAILURE);
         context.yield();
     }
+  }
+
+  private void excuteOperation(MongoCollection<Document> collection,Document currentDoc) throws BadOperationException{
+      Document oDoc = currentDoc.get("o", Document.class);
+      String operation = currentDoc.getString("op");
+      String id = currentDoc.get("o2", Document.class) == null ?
+              currentDoc.get("o", Document.class).getObjectId("_id").toHexString() :
+              currentDoc.get("o2", Document.class).getObjectId("_id").toHexString();
+
+      getLogger().info("excuteOperation id: " + id);
+      getLogger().info("excuteOperation oDoc: " + oDoc);
+
+      switch(operation) {
+          case "i":
+              collection.insertOne(oDoc);
+              break;
+          case "d":
+              collection.deleteOne(eq("_id", new ObjectId(id)));
+              break;
+          case "u":
+              oDoc.remove("_id");
+              oDoc.remove("$v");
+              // doc 中带有$set，只用doc 就可以
+              collection.updateOne(eq("_id", new ObjectId(id)), oDoc);
+              break;
+          default:
+              throw new BadOperationException("Unhandled operation");
+      }
+
   }
 
   private void transferToRelationship(ProcessSession session,
