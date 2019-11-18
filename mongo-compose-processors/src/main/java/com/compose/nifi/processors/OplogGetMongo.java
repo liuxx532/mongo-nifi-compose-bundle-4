@@ -22,13 +22,10 @@ import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.io.OutputStreamCallback;
 import org.bson.BsonTimestamp;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.regex.Pattern;
 
 import static com.mongodb.client.model.Filters.*;
 
