@@ -1,5 +1,6 @@
 package com.compose.nifi.processors;
 
+import com.mongodb.MongoWriteException;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoCollection;
 import org.apache.nifi.annotation.behavior.EventDriven;
@@ -135,7 +136,11 @@ public class OplogPutMongo extends AbstractProcessor {
 
       switch(operation) {
           case "i":
-              collection.insertOne(oDoc);
+              try {
+                  collection.insertOne(oDoc);
+              } catch (MongoWriteException e) {
+                  e.printStackTrace();
+              }
               break;
           case "d":
               collection.deleteOne(eq("_id", new ObjectId(id)));

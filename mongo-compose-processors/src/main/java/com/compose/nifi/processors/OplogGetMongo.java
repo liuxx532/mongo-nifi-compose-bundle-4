@@ -36,7 +36,7 @@ import static com.mongodb.client.model.Filters.*;
  * Created by liuguanxiong on 8/25/16.
  */
 @TriggerSerially
-@InputRequirement(InputRequirement.Requirement.INPUT_ALLOWED)
+@InputRequirement(InputRequirement.Requirement.INPUT_REQUIRED)
 @Tags({"4.0","oplog","compose", "mongodb", "get"})
 @WritesAttributes({
         @WritesAttribute(attribute = "mime.type", description = "This is the content-type for the content."),
