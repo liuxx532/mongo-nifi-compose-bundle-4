@@ -29,3 +29,7 @@ different than `GetMongo` which only calls `session.commit()` after the query is
 * `ComposeTailingGetMongo` provides a snapshot of Mongo database plus a stream of oplog changes in the form of FlowFiles.
 
 * `ComposeTailingPutMongo` puts the dump from the TailingGet into another Mongo.
+
+* `OplogGetMongo` get oplog by database name and collection name, not equals n/q/c, start with checkpoint. 
+
+* `OplogPutMongo` put data into mongo
