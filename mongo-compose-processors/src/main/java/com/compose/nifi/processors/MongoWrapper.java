@@ -111,6 +111,16 @@ class MongoWrapper {
     oplogDescriptors.add(TS_KEY);
   }
 
+  static List<PropertyDescriptor> updatedDescriptors = new ArrayList<>();
+
+  static {
+    updatedDescriptors.add(URI);
+    updatedDescriptors.add(DATABASE_NAME);
+    updatedDescriptors.add(COLLECTION_NAME);
+    updatedDescriptors.add(SSL_CONTEXT_SERVICE);
+    updatedDescriptors.add(CLIENT_AUTH);
+  }
+
   private MongoClient mongoClient;
 
   private MongoClientOptions.Builder getClientOptions(final SSLContext sslContext) {
