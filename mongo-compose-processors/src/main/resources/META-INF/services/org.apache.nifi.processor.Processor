@@ -22,4 +22,5 @@ com.compose.nifi.processors.GetOneByIdMongo
 com.compose.nifi.processors.OplogPutMongo
 com.compose.nifi.processors.ComposeTailingPutMongo
 com.compose.nifi.processors.ComposeOplogPutMongo
+com.compose.nifi.processors.OplogBulkWriteMongo
 com.compose.nifi.processors.ComposeUniqueRocksDB
