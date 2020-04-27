@@ -1,7 +1,15 @@
 package com.compose.nifi.processors;
 
 import com.mongodb.WriteConcern;
+import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.model.DeleteOneModel;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.ReplaceOneModel;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
+import com.mongodb.client.model.WriteModel;
 import org.apache.nifi.annotation.behavior.EventDriven;
 import org.apache.nifi.annotation.behavior.InputRequirement;
 import org.apache.nifi.annotation.behavior.TriggerSerially;
@@ -17,7 +25,13 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.stream.io.StreamUtils;
+import org.bson.BSONObject;
+import org.bson.BasicBSONObject;
+import org.bson.BsonDocument;
 import org.bson.Document;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.conversions.Bson;
+import org.bson.types.ObjectId;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -102,19 +116,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
         JSONArray jsonArray = (JSONArray)(new JSONParser().parse(new String(content)));
         getLogger().info("jsonArray: " + jsonArray);
 
-        List operations = new ArrayList();
-
-        for (int i = 0; i < jsonArray.size(); i++) {
-            JSONObject currentObj = (JSONObject)(new JSONParser().parse(jsonArray.get(i).toString()));
-            getLogger().info("currentDoc: " + currentObj);
-
-            Document currentDoc = Document.parse(currentObj.toJSONString());
-            getLogger().info("oDoc: " + currentDoc);
-
-            operations.add(excuteOperation(collection,currentDoc));
-        }
-
-        collection.bulkWrite(operations);
+        excuteOperation(collection,jsonArray);
 
         session.transfer(flowFile, REL_SUCCESS);
     } catch (Exception e) {
@@ -124,47 +126,51 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
     }
   }
 
-  private JSONObject excuteOperation(MongoCollection<Document> collection,Document currentDoc) throws BadOperationException{
-      Document oDoc = currentDoc.get("o", Document.class);
-      String operation = currentDoc.getString("op");
-      String id = currentDoc.get("o2", Document.class) == null ?
-              currentDoc.get("o", Document.class).getObjectId("_id").toHexString() :
-              currentDoc.get("o2", Document.class).getObjectId("_id").toHexString();
+  private void excuteOperation(MongoCollection<Document> collection,JSONArray jsonArray) throws Exception{
+      Iterator records = jsonArray.iterator();
+      List<WriteModel<Document>> documentList = new ArrayList<>();
 
-      getLogger().info("excuteOperation id: " + id);
-      getLogger().info("excuteOperation oDoc: " + oDoc);
+      while (records.hasNext()) {
+          JSONObject record = (JSONObject)(new JSONParser().parse(records.next().toString()));
+          Document currentDoc = Document.parse(record.toJSONString());
+          Document oDoc = currentDoc.get("o", Document.class);
+          String operation = currentDoc.getString("op");
+          String id = currentDoc.get("o2", Document.class) == null ?
+                  currentDoc.get("o", Document.class).getObjectId("_id").toHexString() :
+                  currentDoc.get("o2", Document.class).getObjectId("_id").toHexString();
 
-      JSONObject opt = null;
-      JSONObject idObj = new JSONObject();
-      JSONObject filterObj = new JSONObject();
-      idObj.put("_id", id);
-      filterObj.put("filter",idObj);
+          Document updateKey = new Document();
+          updateKey.put("_id", new ObjectId(id));
 
-      switch(operation) {
-          case "i":
-              opt = new JSONObject();
-              opt.put("insertOne",oDoc);
-//              collection.insertOne(oDoc);
+          switch(operation) {
+              case "i":
+                  documentList.add(new InsertOneModel<>(oDoc));
               break;
-          case "d":
-              opt = new JSONObject();
-              opt.put("deleteOne",filterObj);
-//              collection.deleteOne(eq("_id", new ObjectId(id)));
+              case "d":
+                  documentList.add(new DeleteOneModel<>(oDoc));
+                  break;
+              case "u":
+                  oDoc.remove("_id");
+                  oDoc.remove("$v");
+                  documentList.add(new UpdateOneModel(updateKey, oDoc,new UpdateOptions().upsert(true)));
               break;
-          case "u":
-              opt = new JSONObject();
-              oDoc.remove("_id");
-              oDoc.remove("$v");
-              // doc 中带有$set，只用doc 就可以
-//              collection.updateOne(eq("_id", new ObjectId(id)), oDoc);
-              filterObj.put("update",oDoc);
-              opt.put("updateOne",filterObj);
-              break;
-          default:
-              throw new BadOperationException("Unhandled operation");
+              default:
+                  throw new BadOperationException("Unhandled operation");
+          }
       }
 
-      return opt;
+
+      if (!documentList.isEmpty()) {
+          BulkWriteResult bulkWriteResult = collection.bulkWrite(documentList);
+          if (bulkWriteResult.wasAcknowledged()) {
+              getLogger().info(
+                      "Wrote batch with {} inserts, {} updates and {} deletes",
+                      new Object[]{bulkWriteResult.getInsertedCount(),
+                      bulkWriteResult.getModifiedCount(),
+                      bulkWriteResult.getDeletedCount()}
+              );
+          }
+      }
   }
 
   private void transferToRelationship(ProcessSession session,
