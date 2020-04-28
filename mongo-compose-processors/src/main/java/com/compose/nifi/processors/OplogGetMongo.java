@@ -94,15 +94,12 @@ public class OplogGetMongo extends AbstractProcessor {
       return;
     }
 
-    getLogger().info("ts key: " + mongoWrapper.getTSKey(context));
-    getLogger().info(flowFile.getAttribute(mongoWrapper.getTSKey(context)));
-
     String tsKey = mongoWrapper.getTSKey(context);
     int tsValue = Integer.parseInt(flowFile.getAttribute(tsKey));
 
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
-      BsonTimestamp givenTs = new BsonTimestamp( tsValue, 0);
+      BsonTimestamp givenTs = new BsonTimestamp( tsValue + 1, 0);
       String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
       getLogger().info("ns: " + ns );
       FindIterable<Document> it = oplog.find(and(
