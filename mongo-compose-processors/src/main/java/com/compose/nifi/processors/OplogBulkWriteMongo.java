@@ -114,8 +114,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
             }
         });
         JSONArray jsonArray = (JSONArray)(new JSONParser().parse(new String(content)));
-        getLogger().info("jsonArray: " + jsonArray);
-
+        getLogger().info("jsonArray size: " + jsonArray.size());
         excuteOperation(collection,jsonArray);
 
         session.transfer(flowFile, REL_SUCCESS);
@@ -141,6 +140,8 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
 
           Document updateKey = new Document();
           updateKey.put("_id", new ObjectId(id));
+          oDoc.remove("ui");
+          oDoc.remove("lsid");
 
           switch(operation) {
               case "i":
@@ -159,6 +160,8 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
           }
       }
 
+      getLogger().info("documentList size:" + documentList.size());
+      getLogger().info("documentList: " + documentList);
 
       if (!documentList.isEmpty()) {
           BulkWriteResult bulkWriteResult = collection.bulkWrite(documentList);

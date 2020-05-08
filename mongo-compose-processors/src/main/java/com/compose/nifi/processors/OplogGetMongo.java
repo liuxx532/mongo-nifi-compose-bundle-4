@@ -101,7 +101,6 @@ public class OplogGetMongo extends AbstractProcessor {
     try {
       BsonTimestamp givenTs = new BsonTimestamp( tsValue + 1, 0);
       String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
-      getLogger().info("ns: " + ns );
       FindIterable<Document> it = oplog.find(and(
               gt("ts", givenTs),
               ne("op","n"),
@@ -114,7 +113,6 @@ public class OplogGetMongo extends AbstractProcessor {
         JSONArray jsonArray = new JSONArray();
         while(cursor.hasNext()){
           Document currentDoc = cursor.next();
-          getLogger().info("currentDoc:" + currentDoc);
           jsonArray.add(currentDoc.toJson());
         }
 
@@ -122,16 +120,12 @@ public class OplogGetMongo extends AbstractProcessor {
 
         if (jsonArray.size() > 0) {
           String lastObj = jsonArray.get(jsonArray.size()-1).toString();
-          getLogger().info("lastObj: " + lastObj);
 
           JSONObject jsonObj = (JSONObject)(new JSONParser().parse(lastObj));
-          getLogger().info("currentDoc Json: " + jsonObj.toString());
 
           JSONObject tsObj = (JSONObject)(new JSONParser().parse(jsonObj.get("ts").toString()));
           JSONObject timestampObj = (JSONObject)(new JSONParser().parse(tsObj.get("$timestamp").toString()));
           endTsValue = timestampObj.get("t").toString();
-
-          getLogger().info("tObj: " + endTsValue);
         }
 
         flowFile = session.putAttribute(flowFile, tsKey, endTsValue);
