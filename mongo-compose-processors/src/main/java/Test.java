@@ -20,9 +20,11 @@ public class Test {
         BsonBinary a = currentDoc.get("ui").asBinary();
         currentDoc.remove("xxx");
         currentDoc.remove("lsid");
+        String ns = "admin.$cmd";
+//        String pref = ns.split(".")[0];
+        String[] buff = ns.split("\\.");
 
-
-        System.out.println(currentDoc);
-        System.out.println(a.asUuid(UuidRepresentation.C_SHARP_LEGACY));
+        System.out.println(ns);
+        System.out.println(buff[0]);
     }
 }

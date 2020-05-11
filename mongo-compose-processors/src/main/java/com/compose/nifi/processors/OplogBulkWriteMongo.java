@@ -135,14 +135,16 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
           Document currentDoc = Document.parse(record.toJSONString());
           getLogger().info("currentDoc: " + currentDoc);
           Document oDoc = currentDoc.get("o", Document.class);
-          String nsPrefix = currentDoc.get("ns", String.class).split(".")[0];
+          String ns = currentDoc.get("ns", String.class);
+          getLogger().info("ns: " + ns);
+          String nsPrefix = currentDoc.get("ns", String.class).split("\\.")[0];
 
           getLogger().info("db: " + db);
           getLogger().info("nsPrefix: " + nsPrefix);
 
-          //如果不等于配置的数据库，则跳过
-          if (!db.equals(nsPrefix)) {
-              return;
+          //如果不等于配置的数据库 而且不等于admin.$cmd，则跳过
+          if (!db.equals(nsPrefix) && !("admin.$cmd").equals(ns)) {
+              continue;
           }
 
           String operation = currentDoc.getString("op");

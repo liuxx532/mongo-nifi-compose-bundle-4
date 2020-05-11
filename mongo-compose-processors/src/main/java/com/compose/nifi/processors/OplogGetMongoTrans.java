@@ -103,7 +103,7 @@ public class OplogGetMongoTrans extends AbstractProcessor {
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
       BsonTimestamp givenTs = new BsonTimestamp( tsValue + 1, 0);
-      String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
+      //事务的oplog 写在ns 为admin.$cmd 中
       FindIterable<Document> it = oplog.find(and(
               gt("ts", givenTs),
               ne("op","n"),
