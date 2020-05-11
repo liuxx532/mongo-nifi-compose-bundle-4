@@ -3,6 +3,7 @@ com/compose/nifi/processors/OplogGetMongo.class
 com/compose/nifi/processors/OplogBulkWriteMongo$1.class
 com/compose/nifi/processors/ComposeOplogGetMongo$1.class
 com/compose/nifi/processors/ComposeOplogGetMongo.class
+com/compose/nifi/processors/OplogGetMongoTrans$1.class
 com/compose/nifi/processors/ComposeTailingGetMongo.class
 com/compose/nifi/processors/MongoWrapper.class
 com/compose/nifi/processors/OplogPutMongo$1.class
@@ -20,6 +21,7 @@ com/compose/nifi/processors/ComposeStreamingGetMongo.class
 com/compose/nifi/processors/ComposeOplogPutMongo.class
 com/compose/nifi/processors/GetOneUpdatedMongo$1.class
 com/compose/nifi/processors/GetOneUpdatedMongo.class
+com/compose/nifi/processors/OplogGetMongoTrans.class
 com/compose/nifi/processors/OplogGetMongo$1.class
 com/compose/nifi/processors/GetOneByIdMongo.class
 com/compose/nifi/processors/ComposeBatchPutMongo.class

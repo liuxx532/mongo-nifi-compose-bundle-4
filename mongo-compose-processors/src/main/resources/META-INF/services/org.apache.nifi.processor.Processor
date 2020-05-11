@@ -17,6 +17,7 @@ com.compose.nifi.processors.ComposeStreamingGetMongo
 com.compose.nifi.processors.ComposeTailingGetMongo
 com.compose.nifi.processors.ComposeOplogGetMongo
 com.compose.nifi.processors.OplogGetMongo
+com.compose.nifi.processors.OplogGetMongoTrans
 com.compose.nifi.processors.GetOneUpdatedMongo
 com.compose.nifi.processors.GetOneByIdMongo
 com.compose.nifi.processors.OplogPutMongo

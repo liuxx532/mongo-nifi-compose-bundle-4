@@ -25,16 +25,14 @@ import org.apache.nifi.processor.ProcessSession;
 import org.apache.nifi.processor.Relationship;
 import org.apache.nifi.processor.io.InputStreamCallback;
 import org.apache.nifi.stream.io.StreamUtils;
-import org.bson.BSONObject;
-import org.bson.BasicBSONObject;
-import org.bson.BsonDocument;
-import org.bson.Document;
+import org.bson.*;
 import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import sun.awt.image.BadDepthException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -69,6 +67,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
   }
 
   private MongoWrapper mongoWrapper;
+  private String db;
 
   @Override
   public final Set<Relationship> getRelationships() {
@@ -102,6 +101,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
     String collectionName = flowFile.getAttribute("mongo.collection");
 
     WriteConcern writeConcern = mongoWrapper.getWriteConcern(context);
+    db =  mongoWrapper.getDatabaseName(context);
     MongoCollection<Document> collection = mongoWrapper.getDatabase(dbName).getCollection(collectionName).withWriteConcern(writeConcern);
 
     try {
@@ -125,6 +125,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
     }
   }
 
+  //处理 oplog 中的 operation
   private void excuteOperation(MongoCollection<Document> collection,JSONArray jsonArray) throws Exception{
       Iterator records = jsonArray.iterator();
       List<WriteModel<Document>> documentList = new ArrayList<>();
@@ -132,32 +133,44 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
       while (records.hasNext()) {
           JSONObject record = (JSONObject)(new JSONParser().parse(records.next().toString()));
           Document currentDoc = Document.parse(record.toJSONString());
+          getLogger().info("currentDoc: " + currentDoc);
           Document oDoc = currentDoc.get("o", Document.class);
-          String operation = currentDoc.getString("op");
-          String id = currentDoc.get("o2", Document.class) == null ?
-                  currentDoc.get("o", Document.class).getObjectId("_id").toHexString() :
-                  currentDoc.get("o2", Document.class).getObjectId("_id").toHexString();
+          String nsPrefix = currentDoc.get("ns", String.class).split(".")[0];
 
-          Document updateKey = new Document();
-          updateKey.put("_id", new ObjectId(id));
-          oDoc.remove("ui");
-          oDoc.remove("lsid");
+          getLogger().info("db: " + db);
+          getLogger().info("nsPrefix: " + nsPrefix);
 
-          switch(operation) {
-              case "i":
-                  documentList.add(new InsertOneModel<>(oDoc));
-              break;
-              case "d":
-                  documentList.add(new DeleteOneModel<>(oDoc));
-                  break;
-              case "u":
-                  oDoc.remove("_id");
-                  oDoc.remove("$v");
-                  documentList.add(new UpdateOneModel(updateKey, oDoc,new UpdateOptions().upsert(true)));
-              break;
-              default:
-                  throw new BadOperationException("Unhandled operation");
+          //如果不等于配置的数据库，则跳过
+          if (!db.equals(nsPrefix)) {
+              return;
           }
+
+          String operation = currentDoc.getString("op");
+          ObjectId id;
+          Object lsid = currentDoc.get("lsid");
+          getLogger().info("oDoc: " + oDoc);
+
+          if (null == lsid) {
+              id = currentDoc.get("o2", Document.class) == null ?
+                      currentDoc.get("o", Document.class).getObjectId("_id") :
+                      currentDoc.get("o2", Document.class).getObjectId("_id");
+              oDoc.remove("ui");
+              documentList.add(processOpt(operation,oDoc,id));
+          } else {
+              ArrayList applyOps = oDoc.get("applyOps",ArrayList.class);
+              Iterator transOps = applyOps.iterator();
+              while (transOps.hasNext()) {
+                  Document transOp = (Document)transOps.next();
+                  getLogger().info("transOp: " + transOp);
+                  transOp.remove("ui");
+                  String op = transOp.getString("op");
+                  Document transDoc = transOp.get("o",Document.class);
+                  id = transDoc.getObjectId("_id");
+
+                  documentList.add(processOpt(op,transDoc,id));
+              }
+          }
+
       }
 
       getLogger().info("documentList size:" + documentList.size());
@@ -173,6 +186,25 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
                       bulkWriteResult.getDeletedCount()}
               );
           }
+      }
+  }
+
+  private WriteModel<Document> processOpt(String operation,Document oDoc,ObjectId id)
+          throws BadOperationException {
+      Document updateKey = new Document();
+      updateKey.put("_id", id);
+
+      switch(operation) {
+          case "i":
+              return new InsertOneModel<>(oDoc);
+          case "d":
+              return new DeleteOneModel<>(oDoc);
+          case "u":
+              oDoc.remove("_id");
+              oDoc.remove("$v");
+              return new UpdateOneModel(updateKey, oDoc,new UpdateOptions().upsert(true));
+          default:
+              throw new BadOperationException("Unhandled operation");
       }
   }
 

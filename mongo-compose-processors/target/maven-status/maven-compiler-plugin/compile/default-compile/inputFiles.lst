@@ -1,5 +1,6 @@
 /Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/OplogBulkWriteMongo.java
 /Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeUniqueRocksDB.java
+/Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/OplogGetMongoTrans.java
 /Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/ComposeStreamingGetMongo.java
 /Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/com/compose/nifi/processors/OplogPutMongo.java
 /Users/lgx/workspace/yc/github/data/nifi/mongo-nifi-compose-bundle-4/mongo-compose-processors/src/main/java/Test.java
