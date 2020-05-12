@@ -152,7 +152,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
           Object lsid = currentDoc.get("lsid");
           getLogger().info("oDoc: " + oDoc);
 
-          if (null == lsid) {
+          if (!("admin.$cmd").equals(ns)) {
               id = currentDoc.get("o2", Document.class) == null ?
                       currentDoc.get("o", Document.class).getObjectId("_id") :
                       currentDoc.get("o2", Document.class).getObjectId("_id");
