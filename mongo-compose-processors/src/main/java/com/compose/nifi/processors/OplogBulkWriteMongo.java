@@ -115,6 +115,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
         });
         JSONArray jsonArray = (JSONArray)(new JSONParser().parse(new String(content)));
         getLogger().info("jsonArray size: " + jsonArray.size());
+        getLogger().info("jsonArray: " + jsonArray);
         excuteOperation(collection,jsonArray);
 
         session.transfer(flowFile, REL_SUCCESS);
@@ -133,14 +134,9 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
       while (records.hasNext()) {
           JSONObject record = (JSONObject)(new JSONParser().parse(records.next().toString()));
           Document currentDoc = Document.parse(record.toJSONString());
-          getLogger().info("currentDoc: " + currentDoc);
           Document oDoc = currentDoc.get("o", Document.class);
           String ns = currentDoc.get("ns", String.class);
-          getLogger().info("ns: " + ns);
           String nsPrefix = currentDoc.get("ns", String.class).split("\\.")[0];
-
-          getLogger().info("db: " + db);
-          getLogger().info("nsPrefix: " + nsPrefix);
 
           //如果不等于配置的数据库 而且不等于admin.$cmd，则跳过
           if (!db.equals(nsPrefix) && !("admin.$cmd").equals(ns)) {
@@ -150,7 +146,6 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
           String operation = currentDoc.getString("op");
           ObjectId id;
           Object lsid = currentDoc.get("lsid");
-          getLogger().info("oDoc: " + oDoc);
 
           if (!("admin.$cmd").equals(ns)) {
               id = currentDoc.get("o2", Document.class) == null ?
