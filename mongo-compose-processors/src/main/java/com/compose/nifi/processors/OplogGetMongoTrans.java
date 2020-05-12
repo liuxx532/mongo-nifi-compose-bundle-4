@@ -104,10 +104,14 @@ public class OplogGetMongoTrans extends AbstractProcessor {
     try {
       BsonTimestamp givenTs = new BsonTimestamp( tsValue + 1, 0);
       //事务的oplog 写在ns 为admin.$cmd 中
+      String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
       FindIterable<Document> it = oplog.find(and(
               gt("ts", givenTs),
               ne("op","n"),
-              ne("op","q")))
+              ne("op","q"),
+              or(eq("ns",ns),
+                 eq("ns","admin.$cmd")
+              )))
               .cursorType(CursorType.NonTailable).oplogReplay(true).noCursorTimeout(true);
       MongoCursor<Document> cursor = it.iterator();
       try {
