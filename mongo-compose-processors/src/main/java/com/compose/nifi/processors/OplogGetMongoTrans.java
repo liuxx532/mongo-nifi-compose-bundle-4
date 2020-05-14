@@ -106,7 +106,7 @@ public class OplogGetMongoTrans extends AbstractProcessor {
       //事务的oplog 写在ns 为admin.$cmd 中
       String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
       FindIterable<Document> it = oplog.find(and(
-              gt("ts", givenTs),
+              gte("ts", givenTs),
               ne("op","n"),
               ne("op","q"),
               or(eq("ns",ns),
