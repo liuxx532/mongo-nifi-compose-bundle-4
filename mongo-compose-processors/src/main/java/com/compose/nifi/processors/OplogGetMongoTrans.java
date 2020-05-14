@@ -99,14 +99,15 @@ public class OplogGetMongoTrans extends AbstractProcessor {
 
     String tsKey = mongoWrapper.getTSKey(context);
     int tsValue = Integer.parseInt(flowFile.getAttribute(tsKey));
+    getLogger().info("tsValue: " + tsValue);
 
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
-      BsonTimestamp givenTs = new BsonTimestamp( tsValue + 1, 0);
+      BsonTimestamp givenTs = new BsonTimestamp( tsValue, 0);
       //事务的oplog 写在ns 为admin.$cmd 中
       String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
       FindIterable<Document> it = oplog.find(and(
-              gte("ts", givenTs),
+              gt("ts", givenTs),
               ne("op","n"),
               ne("op","q"),
               or(eq("ns",ns),
