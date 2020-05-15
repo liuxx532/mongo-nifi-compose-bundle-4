@@ -186,6 +186,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
       }
   }
 
+  //将 oplog 中的操作提取出来放到 list 中，包括事务中的操作
   private WriteModel<Document> processOpt(String operation,Document oDoc,ObjectId id)
           throws BadOperationException {
       Document updateKey = new Document();
@@ -205,6 +206,7 @@ public class OplogBulkWriteMongo extends AbstractProcessor {
       }
   }
 
+  // 指定关系 success/fail 等
   private void transferToRelationship(ProcessSession session,
                                       FlowFile flowFile,
                                       Relationship relationship) {
