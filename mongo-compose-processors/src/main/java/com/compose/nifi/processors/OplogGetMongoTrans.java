@@ -97,13 +97,16 @@ public class OplogGetMongoTrans extends AbstractProcessor {
       return;
     }
 
+    //解析ts 中的值，t的值需要提前给定，无默认值；increment 默认为0
     String tsKey = mongoWrapper.getTSKey(context);
-    int tsValue = Integer.parseInt(flowFile.getAttribute(tsKey));
+    String[] tsArr = flowFile.getAttribute(tsKey).split(",");
+    int tsValue = Integer.parseInt(tsArr[0]);
+    int incValue = tsArr.length > 1 ? Integer.parseInt(tsArr[1]) : 0;
     getLogger().info("tsValue: " + tsValue);
 
     MongoCollection<Document> oplog = mongoWrapper.getLocalDatabase().getCollection("oplog.rs");
     try {
-      BsonTimestamp givenTs = new BsonTimestamp( tsValue, 0);
+      BsonTimestamp givenTs = new BsonTimestamp( tsValue, incValue);
       //事务的oplog 写在ns 为admin.$cmd 中
       String ns = mongoWrapper.getDatabaseName(context) + "." + mongoWrapper.getCollection(context);
       FindIterable<Document> it = oplog.find(and(
@@ -131,7 +134,7 @@ public class OplogGetMongoTrans extends AbstractProcessor {
 
           JSONObject tsObj = (JSONObject)(new JSONParser().parse(jsonObj.get("ts").toString()));
           JSONObject timestampObj = (JSONObject)(new JSONParser().parse(tsObj.get("$timestamp").toString()));
-          endTsValue = timestampObj.get("t").toString();
+          endTsValue = timestampObj.get("t").toString() + "," + timestampObj.get("i").toString();
         }
 
         flowFile = session.putAttribute(flowFile, tsKey, endTsValue);
